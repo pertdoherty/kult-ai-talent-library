@@ -165,12 +165,28 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
 const PORT = process?.env?.API_BACKEND_PORT || 5000;
 const API_BACKEND_HOST = process?.env?.API_BACKEND_HOST || "0.0.0.0";
 
-const GOOGLE_CLOUD_LOCATION = process?.env?.GOOGLE_CLOUD_LOCATION;
-const GOOGLE_CLOUD_PROJECT = process?.env?.GOOGLE_CLOUD_PROJECT;
-if (!GOOGLE_CLOUD_PROJECT || !GOOGLE_CLOUD_LOCATION) {
-  console.error("Error: Environment variables GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION must be set.");
+let GOOGLE_CLOUD_LOCATION = process?.env?.GOOGLE_CLOUD_LOCATION || 'us-central1';
+let GOOGLE_CLOUD_PROJECT = process?.env?.GOOGLE_CLOUD_PROJECT;
+
+// Fallback: Extract Project ID from Service Account if missing
+if (!GOOGLE_CLOUD_PROJECT && process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    const decoded = process.env.FIREBASE_SERVICE_ACCOUNT.startsWith('{') 
+      ? process.env.FIREBASE_SERVICE_ACCOUNT 
+      : Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString();
+    const sa = JSON.parse(decoded);
+    GOOGLE_CLOUD_PROJECT = sa.project_id;
+    console.log(`Firebase: Extracted Project ID "${GOOGLE_CLOUD_PROJECT}" from service account.`);
+  } catch (e) {
+    // Ignore error here, handled in Firebase init
+  }
+}
+
+if (!GOOGLE_CLOUD_PROJECT) {
+  console.error("Error: Environment variable GOOGLE_CLOUD_PROJECT must be set or provided in FIREBASE_SERVICE_ACCOUNT.");
   process.exit(1);
 }
+
 const PROXY_HEADER = process?.env?.PROXY_HEADER;
 if (!PROXY_HEADER) {
   console.error("Error: Environment variables PROXY_HEADER must be set.");

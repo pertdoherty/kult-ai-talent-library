@@ -174,6 +174,26 @@ This lets you test the full production setup locally.
 
 ---
 
+## 🛑 Troubleshooting Common Errors
+
+### 1. Vercel: "No Output Directory named 'dist' found"
+This happens if Vercel doesn't know where to find your built files.
+*   **Fix**: Go to Vercel Dashboard → **Settings** → **General**.
+*   If your **Root Directory** is `frontend`, set **Output Directory** to `dist`.
+*   If your **Root Directory** is `.` (the project root), set **Output Directory** to `frontend/dist`.
+*   **Check**: Ensure you have pushed the latest `vercel.json` files I created.
+
+### 2. Railway: "GOOGLE_CLOUD_PROJECT must be set"
+The backend needs to know which Firebase project to connect to.
+*   **Fix**: Add `FIREBASE_SERVICE_ACCOUNT` to your Railway variables.
+*   The backend now **automatically extracts** the Project ID from your service account key, so you don't need to set `GOOGLE_CLOUD_PROJECT` separately if the service account is provided!
+
+### 3. "Cannot fetch from API" (CORS Errors)
+*   **Fix**: Ensure `VITE_API_URL` in Vercel is set to your **actual** Railway URL (e.g., `https://xyz.up.railway.app`) and NOT `localhost`.
+*   **Redeploy**: Vercel requires a redeploy after changing environment variables.
+
+---
+
 ## Troubleshooting
 
 ### Frontend shows "Cannot fetch from API"
