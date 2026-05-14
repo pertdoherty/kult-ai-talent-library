@@ -182,15 +182,17 @@ if (!GOOGLE_CLOUD_PROJECT && process.env.FIREBASE_SERVICE_ACCOUNT) {
   }
 }
 
-if (!GOOGLE_CLOUD_PROJECT) {
-  console.error("Error: Environment variable GOOGLE_CLOUD_PROJECT must be set or provided in FIREBASE_SERVICE_ACCOUNT.");
-  process.exit(1);
-}
+console.log('--- Backend Startup Health Check ---');
+console.log(`Port: ${PORT}`);
+console.log(`Host: ${API_BACKEND_HOST}`);
+console.log(`Project ID: ${GOOGLE_CLOUD_PROJECT || 'MISSING'}`);
+console.log(`Location: ${GOOGLE_CLOUD_LOCATION}`);
+console.log(`Service Account: ${process.env.FIREBASE_SERVICE_ACCOUNT ? 'PROVIDED' : 'MISSING'}`);
+console.log(`Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? 'CONFIGURED' : 'INCOMPLETE'}`);
+console.log(`Proxy Header: ${process.env.PROXY_HEADER ? 'CUSTOM' : 'DEFAULT'}`);
+console.log('------------------------------------');
 
 const PROXY_HEADER = process?.env?.PROXY_HEADER || 'dAGtg3qhY5E8-3ai3mnHrtJoh34Rz4qR';
-if (!process.env.PROXY_HEADER) {
-  console.warn(`Backend: PROXY_HEADER not set. Using default value.`);
-}
 
 app.set('trust proxy', 1 /* number of proxies between user and server */);
 

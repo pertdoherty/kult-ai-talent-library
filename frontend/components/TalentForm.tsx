@@ -143,9 +143,17 @@ export const TalentForm: React.FC<TalentFormProps> = ({ initialData, onSave, onC
   };
   const removeUseCase = (index: number) => setFormData(prev => ({ ...prev, useCases: (prev.useCases || []).filter((_, i) => i !== index) }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    try {
+      setUploading(true);
+      await onSave(formData);
+    } catch (err) {
+      console.error('TalentForm: Save failed:', err);
+      alert(`Save Failed: ${err.message || 'Unknown error'}. Check if the backend is running.`);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const inputClass = "w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all";

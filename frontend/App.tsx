@@ -31,13 +31,15 @@ export default function App() {
     const fetchTalents = async () => {
       try {
         setLoading(true);
+        console.log('App: Fetching talents from:', API_BASE);
         const response = await fetch(`${API_BASE}/api/talents`);
-        if (!response.ok) throw new Error('Failed to fetch talents');
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
         const data = await response.json();
+        console.log('App: Successfully fetched', data.length, 'talents');
         setTalents(data.length > 0 ? data : initialTalents);
         setError(null);
       } catch (err) {
-        console.warn('Could not fetch from API, using initial data:', err);
+        console.warn('App: API fetch failed, falling back to initial data:', err.message);
         setTalents(initialTalents);
         setError(null);
       } finally {
@@ -171,6 +173,15 @@ export default function App() {
   };
 
   const renderView = () => {
+    if (loading) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
+          <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+          <p className="text-zinc-500 font-medium animate-pulse uppercase tracking-widest text-xs">Loading Library...</p>
+        </div>
+      );
+    }
+
     switch (view) {
       case 'home':
         return <Home onSelectTalent={handleSelectTalent} talents={talents} onSeeMore={navigateToCatalog} />;
