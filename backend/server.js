@@ -187,10 +187,9 @@ if (!GOOGLE_CLOUD_PROJECT) {
   process.exit(1);
 }
 
-const PROXY_HEADER = process?.env?.PROXY_HEADER;
-if (!PROXY_HEADER) {
-  console.error("Error: Environment variables PROXY_HEADER must be set.");
-  process.exit(1);
+const PROXY_HEADER = process?.env?.PROXY_HEADER || 'dAGtg3qhY5E8-3ai3mnHrtJoh34Rz4qR';
+if (!process.env.PROXY_HEADER) {
+  console.warn(`Backend: PROXY_HEADER not set. Using default value.`);
 }
 
 app.set('trust proxy', 1 /* number of proxies between user and server */);
