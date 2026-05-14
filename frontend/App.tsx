@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header.tsx';
 import { Home } from './components/Home.tsx';
 import { Catalog } from './components/Catalog.tsx';
@@ -9,17 +9,44 @@ import { Login } from './components/Login.tsx';
 import { talents as initialTalents } from './data.ts';
 import { Talent } from './types.ts';
 
+// API base URL - change this to your Railway backend URL when deployed
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 type ViewState = 'home' | 'catalog' | 'detail' | 'admin' | 'form' | 'login';
 type Role = 'user' | 'admin';
 
 export default function App() {
-  const [talents, setTalents] = useState<Talent[]>(initialTalents);
+  const [talents, setTalents] = useState<Talent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<Role>('user');
   const [view, setView] = useState<ViewState>('home');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const [selectedTalentId, setSelectedTalentId] = useState<string | null>(null);
   const [editingTalent, setEditingTalent] = useState<Talent | null>(null);
+
+  // Fetch talents from API on mount
+  useEffect(() => {
+    const fetchTalents = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE}/api/talents`);
+        if (!response.ok) throw new Error('Failed to fetch talents');
+        const data = await response.json();
+        setTalents(data.length > 0 ? data : initialTalents);
+        setError(null);
+      } catch (err) {
+        console.warn('Could not fetch from API, using initial data:', err);
+        setTalents(initialTalents);
+        setError(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTalents();
+  }, []);
 
   const navigateToHome = () => {
     setSelectedTalentId(null);
@@ -97,25 +124,49 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDeleteTalent = (id: string) => {
-    setTalents(prev => prev.filter(t => t.id !== id));
+  const handleDeleteTalent = async (id: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/talents/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete talent');
+      setTalents(prev => prev.filter(t => t.id !== id));
+    } catch (err) {
+      console.error('Error deleting talent:', err);
+      alert('Failed to delete talent. Please try again.');
+    }
   };
 
-  const handleSaveTalent = (savedTalent: Talent) => {
-    setTalents(prev => {
-      const exists = prev.find(t => t.id === savedTalent.id);
-      if (exists) {
-        return prev.map(t => t.id === savedTalent.id ? savedTalent : t);
+  const handleSaveTalent = async (savedTalent: Talent) => {
+    try {
+      if (editingTalent) {
+        // Update existing talent
+        const response = await fetch(`${API_BASE}/api/talents/${editingTalent.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(savedTalent),
+        });
+        if (!response.ok) throw new Error('Failed to update talent');
+        setTalents(prev => prev.map(t => t.id === editingTalent.id ? savedTalent : t));
       } else {
-        return [...prev, savedTalent];
+        // Create new talent
+        const response = await fetch(`${API_BASE}/api/talents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(savedTalent),
+        });
+        if (!response.ok) throw new Error('Failed to create talent');
+        const newTalent = await response.json();
+        setTalents(prev => [...prev, newTalent]);
       }
-    });
-    
-    // If we were editing a specific talent from the detail view, go back to detail view
-    if (selectedTalentId === savedTalent.id) {
-      setView('detail');
-    } else {
-      navigateToAdmin();
+      
+      // If we were editing a specific talent from the detail view, go back to detail view
+      if (selectedTalentId === savedTalent.id) {
+        setView('detail');
+      } else {
+        navigateToAdmin();
+      }
+    } catch (err) {
+      console.error('Error saving talent:', err);
+      alert('Failed to save talent. Please try again.');
     }
   };
 

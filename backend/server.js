@@ -10,12 +10,116 @@ import { GoogleAuth } from 'google-auth-library';
 import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import cloudinary from 'cloudinary';
+import multer from 'multer';
 
 const app = express();
 app.use(express.json({limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb"}));
+app.use(express.urlencoded({ limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb" }));
+
+// Configure multer for file uploads
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Firebase initialization
+try {
+  initializeApp({
+    projectId: process.env.GOOGLE_CLOUD_PROJECT,
+  });
+} catch (error) {
+  console.error('Firebase initialization error:', error.message);
+}
+const db = getFirestore();
+
+// Cloudinary configuration
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.v2.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+} else {
+  console.warn('Cloudinary credentials not fully configured in .env.local');
+}
+
+// --- Talent Management API Endpoints ---
+
+// GET /api/talents - Fetch all talents
+app.get('/api/talents', async (req, res) => {
+  try {
+    const snapshot = await db.collection('talents').get();
+    const talents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(talents);
+  } catch (error) {
+    console.error('Error fetching talents:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/talents - Create new talent
+app.post('/api/talents', async (req, res) => {
+  try {
+    const talent = req.body;
+    const docRef = await db.collection('talents').add(talent);
+    res.json({ id: docRef.id, ...talent });
+  } catch (error) {
+    console.error('Error creating talent:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/talents/:id - Update talent
+app.put('/api/talents/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const talent = req.body;
+    await db.collection('talents').doc(id).update(talent);
+    res.json({ id, ...talent });
+  } catch (error) {
+    console.error('Error updating talent:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/talents/:id - Delete talent
+app.delete('/api/talents/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection('talents').doc(id).delete();
+    res.json({ message: 'Deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting talent:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/upload - Upload image to Cloudinary
+app.post('/api/upload', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.v2.uploader.upload_stream(
+        { folder: 'talents', resource_type: 'auto' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(req.file.buffer);
+    });
+
+    res.json({ url: result.secure_url });
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 const PORT = process?.env?.API_BACKEND_PORT || 5000;
-const API_BACKEND_HOST = process?.env?.API_BACKEND_HOST || "127.0.0.1";
+const API_BACKEND_HOST = process?.env?.API_BACKEND_HOST || "0.0.0.0";
 
 const GOOGLE_CLOUD_LOCATION = process?.env?.GOOGLE_CLOUD_LOCATION;
 const GOOGLE_CLOUD_PROJECT = process?.env?.GOOGLE_CLOUD_PROJECT;
@@ -446,10 +550,12 @@ server.on('upgrade', async (request, socket, head) => {
 
     upstreamWs.once('open', onUpstreamOpen);
 
+    
   } else {
     // Path did not match
     socket.destroy();
   }
+  
 });
 
 

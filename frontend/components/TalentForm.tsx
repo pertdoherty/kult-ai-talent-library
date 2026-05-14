@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Talent, Outfit, Voice, UseCase } from '../types.ts';
 import { ArrowLeft, Save, UploadCloud, Plus, Trash2, Image as ImageIcon, Mic } from 'lucide-react';
 
+// API base URL - must match App.tsx
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 interface TalentFormProps {
   initialData?: Talent | null;
   onSave: (talent: Talent) => void;
@@ -29,6 +32,7 @@ type FormTab = 'basic' | 'media' | 'usecases';
 export const TalentForm: React.FC<TalentFormProps> = ({ initialData, onSave, onCancel }) => {
   const [formData, setFormData] = useState<Talent>(initialData || defaultTalent);
   const [activeTab, setActiveTab] = useState<FormTab>('basic');
+  const [uploading, setUploading] = useState(false);
 
   // --- Basic Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -42,20 +46,67 @@ export const TalentForm: React.FC<TalentFormProps> = ({ initialData, onSave, onC
     setFormData(prev => ({ ...prev, [field]: arrayValue }));
   };
 
-  // --- File Upload Handlers (Simulated with Object URLs) ---
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
+  // --- File Upload Handlers (Upload to Cloudinary via API) ---
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const formDataToSend = new FormData();
+      formDataToSend.append('image', file);
+
+      const response = await fetch(`${API_BASE}/api/upload`, {
+        method: 'POST',
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const { url } = await response.json();
       callback(url);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleMultipleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (urls: string[]) => void) => {
+  const handleMultipleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, callback: (urls: string[]) => void) => {
     const files = Array.from(e.target.files || []);
-    const urls = files.map(file => URL.createObjectURL(file));
-    callback(urls);
-  };
+    if (files.length === 0) return;
+
+    try {
+      setUploading(true);
+      const uploadPromises = files.map(async (file) => {
+        const formDataToSend = new FormData();
+        formDataToSend.append('image', file);
+
+        const response = await fetch(`${API_BASE}/api/upload`, {
+          method: 'POST',
+          body: formDataToSend,
+        });
+
+        if (!response.ok) {
+          throw new Error('Upload failed for ' + file.name);
+        }
+
+        const { url } = await response.json();
+        return url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      callback(urls);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      alert('Failed to upload one or more images. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   // --- Dynamic Array Handlers ---
   const addOutfit = () => setFormData(prev => ({ ...prev, outfits: [...prev.outfits, { label: '' }] }));
@@ -92,15 +143,15 @@ export const TalentForm: React.FC<TalentFormProps> = ({ initialData, onSave, onC
 
   const FileUploadBtn = ({ label, accept, onChange, previewUrl, multiple = false }: { label: string, accept: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, previewUrl?: string, multiple?: boolean }) => (
     <div className="relative group">
-      <div className={`border-2 border-dashed border-zinc-700 rounded-xl p-4 text-center hover:border-cyan-400 transition-colors cursor-pointer bg-zinc-900/50 ${previewUrl ? 'overflow-hidden' : ''}`}>
+      <div className={`border-2 border-dashed border-zinc-700 rounded-xl p-4 text-center hover:border-cyan-400 transition-colors cursor-pointer bg-zinc-900/50 ${previewUrl ? 'overflow-hidden' : ''} ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
         {previewUrl && !multiple ? (
           <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity" />
         ) : null}
         <div className="relative z-10 flex flex-col items-center justify-center space-y-2">
-          <UploadCloud size={24} className="text-zinc-400 group-hover:text-cyan-400" />
-          <span className="text-sm font-medium text-zinc-300">{label}</span>
+          <UploadCloud size={24} className={`${uploading ? 'text-zinc-600 animate-pulse' : 'text-zinc-400 group-hover:text-cyan-400'}`} />
+          <span className="text-sm font-medium text-zinc-300">{uploading ? 'Uploading...' : label}</span>
         </div>
-        <input type="file" accept={accept} multiple={multiple} onChange={onChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
+        <input type="file" accept={accept} multiple={multiple} onChange={onChange} disabled={uploading} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
       </div>
     </div>
   );
