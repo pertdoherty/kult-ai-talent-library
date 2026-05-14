@@ -33,6 +33,10 @@ export const TalentForm: React.FC<TalentFormProps> = ({ initialData, onSave, onC
   const [formData, setFormData] = useState<Talent>(initialData || defaultTalent);
   const [activeTab, setActiveTab] = useState<FormTab>('basic');
   const [uploading, setUploading] = useState(false);
+  
+  // Local states for comma-separated inputs to allow spaces/commas while typing
+  const [personalityStr, setPersonalityStr] = useState(formData.personality.join(', '));
+  const [bestFitStr, setBestFitStr] = useState(formData.bestFit.join(', '));
 
   // --- Basic Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -42,6 +46,12 @@ export const TalentForm: React.FC<TalentFormProps> = ({ initialData, onSave, onC
 
   const handleArrayChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'personality' | 'bestFit') => {
     const value = e.target.value;
+    
+    // Update the local string state immediately so the user can type freely
+    if (field === 'personality') setPersonalityStr(value);
+    else setBestFitStr(value);
+
+    // Update the actual array in formData
     const arrayValue = value.split(',').map(item => item.trim()).filter(item => item !== '');
     setFormData(prev => ({ ...prev, [field]: arrayValue }));
   };
@@ -230,11 +240,11 @@ export const TalentForm: React.FC<TalentFormProps> = ({ initialData, onSave, onC
               <div className="space-y-6">
                 <div>
                   <label className={labelClass}>Personality Traits (Comma separated)</label>
-                  <input type="text" value={formData.personality.join(', ')} onChange={(e) => handleArrayChange(e, 'personality')} placeholder="e.g. Friendly, Professional, Gen Z" className={inputClass} />
+                  <input type="text" value={personalityStr} onChange={(e) => handleArrayChange(e, 'personality')} placeholder="e.g. Friendly, Professional, Gen Z" className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Best Fit For (Comma separated)</label>
-                  <input type="text" value={formData.bestFit.join(', ')} onChange={(e) => handleArrayChange(e, 'bestFit')} placeholder="e.g. Beauty, Tech, Gaming" className={inputClass} />
+                  <input type="text" value={bestFitStr} onChange={(e) => handleArrayChange(e, 'bestFit')} placeholder="e.g. Beauty, Tech, Gaming" className={inputClass} />
                 </div>
               </div>
             </div>

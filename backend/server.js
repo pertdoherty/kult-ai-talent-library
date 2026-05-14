@@ -10,7 +10,7 @@ import { GoogleAuth } from 'google-auth-library';
 import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
-import { initializeApp } from 'firebase-admin/app';
+import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import cloudinary from 'cloudinary';
 import multer from 'multer';
@@ -48,11 +48,30 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Firebase initialization
 try {
-  initializeApp({
-    projectId: process.env.GOOGLE_CLOUD_PROJECT,
-  });
+  let firebaseOptions = {};
+  
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    console.log('Firebase: Using service account from environment variable.');
+    let serviceAccount;
+    try {
+      // Check if it's base64 encoded or raw JSON
+      const decoded = process.env.FIREBASE_SERVICE_ACCOUNT.startsWith('{') 
+        ? process.env.FIREBASE_SERVICE_ACCOUNT 
+        : Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString();
+      serviceAccount = JSON.parse(decoded);
+      firebaseOptions.credential = cert(serviceAccount);
+    } catch (e) {
+      console.error('Firebase: Failed to parse FIREBASE_SERVICE_ACCOUNT. Ensure it is valid JSON or Base64 JSON.', e.message);
+    }
+  } else {
+    console.log('Firebase: Using Application Default Credentials (ADC).');
+    firebaseOptions.projectId = process.env.GOOGLE_CLOUD_PROJECT;
+  }
+
+  initializeApp(firebaseOptions);
+  console.log('Firebase: Initialized successfully.');
 } catch (error) {
-  console.error('Firebase initialization error:', error.message);
+  console.error('Firebase: Initialization error:', error.message);
 }
 const db = getFirestore();
 
@@ -63,8 +82,9 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
+  console.log('Cloudinary: Configured successfully.');
 } else {
-  console.warn('Cloudinary credentials not fully configured in .env.local');
+  console.warn('Cloudinary: Missing credentials! Check CLOUDINARY_CLOUD_NAME, API_KEY, and API_SECRET.');
 }
 
 // --- Talent Management API Endpoints ---

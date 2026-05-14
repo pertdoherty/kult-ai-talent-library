@@ -109,27 +109,55 @@ Open https://kult-ai-talent-library.vercel.app in your browser and:
 
 ---
 
-## Environment Variables Summary
-
-### Backend (.env.local in Railway)
+### Backend (.env.local or Railway Variables)
 ```
-GOOGLE_CLOUD_PROJECT=project-logan-456105
+# --- Mandatory ---
+GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_LOCATION=global
 PROXY_HEADER=dAGtg3qhY5E8-3ai3mnHrtJoh34Rz4qR
-API_BACKEND_PORT=3000
-API_BACKEND_HOST=0.0.0.0
+
+# --- Firebase (Recommended for Railway) ---
+# Paste your Firebase Service Account JSON here. 
+# Better: Base64 encode it and paste it here.
+FIREBASE_SERVICE_ACCOUNT={"type": "service_account", ...}
+
+# --- Cloudinary ---
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+
+# --- Networking ---
+API_BACKEND_PORT=3000
+API_BACKEND_HOST=0.0.0.0
 FRONTEND_URL=https://kult-ai-talent-library.vercel.app
 ```
 
-### Frontend (.env.production in Vercel)
+### Frontend (.env.production or Vercel Variables)
 ```
-VITE_API_URL=https://kult-ai-talent-library-production.up.railway.app
+# MUST point to your Railway URL (e.g. https://xyz.up.railway.app)
+VITE_API_URL=https://your-backend-url.railway.app
 ```
 
 ---
+
+## 🛠️ Detailed Setup Instructions
+
+### 1. Firebase Service Account (For Railway)
+Since Railway doesn't have your Google Cloud credentials, you must provide them:
+1. Go to **Google Cloud Console** → **IAM & Admin** → **Service Accounts**.
+2. Create a service account (or use an existing one) with **Firestore User** permissions.
+3. Click **Keys** → **Add Key** → **Create New Key (JSON)**.
+4. Open the downloaded JSON file.
+5. **Option A (Raw)**: Copy the entire JSON and paste it into the `FIREBASE_SERVICE_ACCOUNT` variable in Railway.
+6. **Option B (Base64 - Recommended)**: Encode the JSON to Base64 (run `cat key.json | base64` on Mac) and paste that. The backend will automatically detect and decode it.
+
+### 2. Vercel Frontend Connection
+Your frontend **cannot** talk to the backend unless it knows where it is:
+1. In Vercel Dashboard, go to **Settings** → **Environment Variables**.
+2. Add `VITE_API_URL`.
+3. Set its value to your **Railway Public URL** (e.g., `https://kult-ai-talent-library-production.up.railway.app`).
+4. **Redeploy** the frontend for changes to take effect.
+
 
 ## Local Development (After Deployment)
 
