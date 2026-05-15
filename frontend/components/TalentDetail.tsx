@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Talent } from '../types.ts';
-import { ArrowLeft, Check, Play, Pause, Edit2 } from 'lucide-react';
+import { ArrowLeft, Check, Play, Pause, Edit2, Maximize2 } from 'lucide-react';
+import { ImageModal } from './ImageModal.tsx';
 
 interface TalentDetailProps {
   talent: Talent;
@@ -14,6 +15,7 @@ type Tab = 'turnaround' | 'expressions' | 'outfits' | 'voices' | 'usecases';
 export const TalentDetail: React.FC<TalentDetailProps> = ({ talent, onBack, isAdmin, onEdit }) => {
   const [activeTab, setActiveTab] = useState<Tab>('turnaround');
   const [playingAudio, setPlayingAudio] = useState<number | null>(null);
+  const [modalImage, setModalImage] = useState<{ url: string, alt: string } | null>(null);
   const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
 
   const tabs: { id: Tab; label: string }[] = [
@@ -82,8 +84,14 @@ export const TalentDetail: React.FC<TalentDetailProps> = ({ talent, onBack, isAd
                 <h1 className="text-4xl font-black uppercase mt-2">{talent.name}</h1>
               </div>
 
-              <div className="aspect-[3/4] w-full mb-8 rounded-xl overflow-hidden bg-zinc-800">
-                <img src={getMainImg()} alt={talent.name} className="w-full h-full object-cover" />
+              <div 
+                className="aspect-[3/4] w-full mb-8 rounded-xl overflow-hidden bg-zinc-800 cursor-zoom-in relative group/img"
+                onClick={() => setModalImage({ url: getMainImg(), alt: `${talent.name} - Profile` })}
+              >
+                <img src={getMainImg()} alt={talent.name} className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-105" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                  <Maximize2 size={32} className="text-white" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6 mb-8">
@@ -145,8 +153,15 @@ export const TalentDetail: React.FC<TalentDetailProps> = ({ talent, onBack, isAd
                   <h3 className="text-xl font-bold uppercase tracking-wide mb-6">{talent.name} - Turnaround Views</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[0, 1, 2, 3].map((view) => (
-                      <div key={view} className="aspect-[1/2] bg-zinc-800 rounded-lg overflow-hidden">
-                        <img src={getTurnaroundImg(view)} alt={`Turnaround ${view + 1}`} className="w-full h-full object-cover" />
+                      <div 
+                        key={view} 
+                        className="aspect-[1/2] bg-zinc-800 rounded-lg overflow-hidden cursor-zoom-in relative group/img"
+                        onClick={() => setModalImage({ url: getTurnaroundImg(view), alt: `${talent.name} - Turnaround ${view + 1}` })}
+                      >
+                        <img src={getTurnaroundImg(view)} alt={`Turnaround ${view + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                          <Maximize2 size={24} className="text-white" />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -159,14 +174,27 @@ export const TalentDetail: React.FC<TalentDetailProps> = ({ talent, onBack, isAd
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2 grid grid-cols-2 gap-4">
                       {[0, 1, 2, 3].map((exp) => (
-                        <div key={exp} className="aspect-square bg-zinc-800 rounded-lg overflow-hidden relative">
-                          <img src={getExpressionImg(exp)} alt={`Expression ${exp + 1}`} className="w-full h-full object-cover" />
-                          <div className="absolute bottom-2 left-2 text-xs bg-black/50 px-2 py-1 rounded text-white">Exp {exp + 1}</div>
-                        </div>
+                         <div 
+                           key={exp} 
+                           className="aspect-square bg-zinc-800 rounded-lg overflow-hidden relative cursor-zoom-in group/img"
+                           onClick={() => setModalImage({ url: getExpressionImg(exp), alt: `${talent.name} - Expression ${exp + 1}` })}
+                         >
+                           <img src={getExpressionImg(exp)} alt={`Expression ${exp + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110" />
+                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                             <Maximize2 size={24} className="text-white" />
+                           </div>
+                           <div className="absolute bottom-2 left-2 text-xs bg-black/50 px-2 py-1 rounded text-white">Exp {exp + 1}</div>
+                         </div>
                       ))}
                     </div>
-                    <div className="md:col-span-1 aspect-[3/4] md:aspect-auto bg-zinc-800 rounded-lg overflow-hidden relative">
-                      <img src={getCloseupImg()} alt="Close-up" className="w-full h-full object-cover" />
+                    <div 
+                      className="md:col-span-1 aspect-[3/4] md:aspect-auto bg-zinc-800 rounded-lg overflow-hidden relative cursor-zoom-in group/img"
+                      onClick={() => setModalImage({ url: getCloseupImg(), alt: `${talent.name} - Close-up` })}
+                    >
+                      <img src={getCloseupImg()} alt="Close-up" className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                        <Maximize2 size={24} className="text-white" />
+                      </div>
                       <div className="absolute top-4 left-4 text-sm font-bold bg-black/50 px-3 py-1 rounded text-white uppercase tracking-wider">Close-Up</div>
                     </div>
                   </div>
@@ -180,12 +208,21 @@ export const TalentDetail: React.FC<TalentDetailProps> = ({ talent, onBack, isAd
                     {talent.outfits.map((outfit, idx) => (
                       <div key={idx} className="space-y-3">
                         <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider text-center">{outfit.label}</div>
-                        <div className="aspect-[1/2] bg-zinc-800 rounded-lg overflow-hidden">
+                        <div 
+                          className="aspect-[1/2] bg-zinc-800 rounded-lg overflow-hidden cursor-zoom-in relative group/img"
+                          onClick={() => setModalImage({ 
+                            url: outfit.imageUrl || `https://picsum.photos/seed/${talent.imageSeed}_outfit_${idx}/400/800`, 
+                            alt: `${talent.name} - ${outfit.label}` 
+                          })}
+                        >
                           <img 
                             src={outfit.imageUrl || `https://picsum.photos/seed/${talent.imageSeed}_outfit_${idx}/400/800`} 
                             alt={outfit.label}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
                           />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                            <Maximize2 size={24} className="text-white" />
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -236,12 +273,21 @@ export const TalentDetail: React.FC<TalentDetailProps> = ({ talent, onBack, isAd
                   <h3 className="text-xl font-bold uppercase tracking-wide mb-6">{talent.name} - Use Cases</h3>
                   {talent.useCases.map((useCase, idx) => (
                     <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center border-b border-zinc-800/50 pb-12 last:border-0 last:pb-0">
-                      <div className="aspect-video bg-zinc-800 rounded-xl overflow-hidden">
+                      <div 
+                        className="aspect-video bg-zinc-800 rounded-xl overflow-hidden cursor-zoom-in relative group/img"
+                        onClick={() => setModalImage({ 
+                          url: useCase.imageUrl || `https://picsum.photos/seed/${talent.imageSeed}_usecase_${idx}/800/450`, 
+                          alt: useCase.title 
+                        })}
+                      >
                          <img 
                             src={useCase.imageUrl || `https://picsum.photos/seed/${talent.imageSeed}_usecase_${idx}/800/450`} 
                             alt={useCase.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-105"
                           />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                            <Maximize2 size={32} className="text-white" />
+                          </div>
                       </div>
                       <div>
                         <h4 className="text-lg font-bold mb-4 text-white">{useCase.title}</h4>
@@ -258,6 +304,14 @@ export const TalentDetail: React.FC<TalentDetailProps> = ({ talent, onBack, isAd
           </div>
         </div>
       </div>
+      {/* Image Modal */}
+      {modalImage && (
+        <ImageModal 
+          imageUrl={modalImage.url} 
+          altText={modalImage.alt} 
+          onClose={() => setModalImage(null)} 
+        />
+      )}
     </div>
   );
 };

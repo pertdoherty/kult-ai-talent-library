@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Talent } from '../types.ts';
-import { ArrowRight, Search, ArrowUpDown, ChevronUp, ChevronDown, X, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Search, ArrowUpDown, ChevronUp, ChevronDown, X, ArrowLeft, Maximize2 } from 'lucide-react';
+import { ImageModal } from './ImageModal.tsx';
 
 interface CatalogProps {
   talents: Talent[];
@@ -14,6 +15,7 @@ type SortDirection = 'asc' | 'desc';
 export const Catalog: React.FC<CatalogProps> = ({ talents, onSelectTalent, onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>(null);
+  const [modalImage, setModalImage] = useState<{ url: string, alt: string } | null>(null);
 
   const handleSort = (key: SortKey) => {
     let direction: SortDirection = 'asc';
@@ -169,11 +171,25 @@ export const Catalog: React.FC<CatalogProps> = ({ talents, onSelectTalent, onBac
                     <td className="p-6 font-mono text-sm">{talent.id}</td>
                     <td className="p-6">
                       <div className="flex items-center space-x-4">
-                        <img 
-                          src={talent.profileImageUrl || `https://picsum.photos/seed/${talent.imageSeed}_profile/100/100`} 
-                          alt={talent.name} 
-                          className="w-12 h-12 rounded-full object-cover border border-zinc-700"
-                        />
+                        <div 
+                          className="relative group/img cursor-zoom-in"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModalImage({ 
+                              url: talent.profileImageUrl || `https://picsum.photos/seed/${talent.imageSeed}_profile/100/100`, 
+                              alt: talent.name 
+                            });
+                          }}
+                        >
+                          <img 
+                            src={talent.profileImageUrl || `https://picsum.photos/seed/${talent.imageSeed}_profile/100/100`} 
+                            alt={talent.name} 
+                            className="w-12 h-12 rounded-full object-cover border border-zinc-700 transition-transform group-hover/img:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                            <Maximize2 size={14} className="text-white" />
+                          </div>
+                        </div>
                         <span className="font-bold text-lg text-white group-hover:text-cyan-400 transition-colors">{talent.name}</span>
                       </div>
                     </td>
@@ -244,6 +260,15 @@ export const Catalog: React.FC<CatalogProps> = ({ talents, onSelectTalent, onBac
           </div>
         )}
       </section>
+
+      {/* Image Modal */}
+      {modalImage && (
+        <ImageModal 
+          imageUrl={modalImage.url} 
+          altText={modalImage.alt} 
+          onClose={() => setModalImage(null)} 
+        />
+      )}
     </div>
   );
 };
