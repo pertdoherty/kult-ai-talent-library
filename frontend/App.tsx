@@ -11,7 +11,16 @@ import { talents as initialTalents } from './data.ts';
 import { Talent } from './types.ts';
 
 // API base URL - change this to your Railway backend URL when deployed
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const getApiBase = () => {
+  let url = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // Ensure it starts with a protocol to avoid relative path issues
+  if (url && !url.startsWith('http')) {
+    url = `https://${url}`;
+  }
+  return url;
+};
+
+const API_BASE = getApiBase();
 
 type ViewState = 'home' | 'catalog' | 'detail' | 'admin' | 'form' | 'login';
 type Role = 'user' | 'admin';

@@ -3,7 +3,15 @@ import { Talent, Outfit, Voice, UseCase } from '../types.ts';
 import { ArrowLeft, Save, UploadCloud, Plus, Trash2, Image as ImageIcon, Mic } from 'lucide-react';
 
 // API base URL - must match App.tsx
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const getApiBase = () => {
+  let url = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  if (url && !url.startsWith('http')) {
+    url = `https://${url}`;
+  }
+  return url;
+};
+
+const API_BASE = getApiBase();
 
 interface TalentFormProps {
   initialData?: Talent | null;
