@@ -21,15 +21,19 @@ app.use(express.urlencoded({ limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb" 
 
 // CORS configuration - allow requests from Vercel frontend
 app.use((req, res, next) => {
+  const origin = req.headers.origin;
   const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
     process.env.FRONTEND_URL || 'https://kult-ai-talent-library.vercel.app'
   ];
   
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
+  // More robust CORS: if the origin is in our list, or if it matches vercel.app
+  if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app'))) {
     res.header('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    // Fallback for tools/non-browser requests
+    res.header('Access-Control-Allow-Origin', '*');
   }
   
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -103,25 +107,29 @@ app.get('/api/talents', async (req, res) => {
 
 // POST /api/talents - Create new talent
 app.post('/api/talents', async (req, res) => {
+  console.log('API: Received request to create talent:', req.body?.name);
   try {
     const talent = req.body;
     const docRef = await db.collection('talents').add(talent);
+    console.log('API: Successfully created talent with ID:', docRef.id);
     res.json({ id: docRef.id, ...talent });
   } catch (error) {
-    console.error('Error creating talent:', error);
+    console.error('API Error creating talent:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // PUT /api/talents/:id - Update talent
 app.put('/api/talents/:id', async (req, res) => {
+  const { id } = req.params;
+  console.log('API: Received request to update talent:', id);
   try {
-    const { id } = req.params;
     const talent = req.body;
     await db.collection('talents').doc(id).update(talent);
+    console.log('API: Successfully updated talent:', id);
     res.json({ id, ...talent });
   } catch (error) {
-    console.error('Error updating talent:', error);
+    console.error('API Error updating talent:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -140,29 +148,37 @@ app.delete('/api/talents/:id', async (req, res) => {
 
 // POST /api/upload - Upload image to Cloudinary
 app.post('/api/upload', upload.single('image'), async (req, res) => {
+  console.log('API: Received upload request');
   try {
     if (!req.file) {
+      console.warn('API: No file provided in upload request');
       return res.status(400).json({ error: 'No file provided' });
     }
 
+    console.log('API: Uploading to Cloudinary...', req.file.originalname);
     const result = await new Promise((resolve, reject) => {
       cloudinary.v2.uploader.upload_stream(
         { folder: 'talents', resource_type: 'auto' },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            console.error('Cloudinary Upload Error:', error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
         }
       ).end(req.file.buffer);
     });
 
+    console.log('API: Upload successful:', result.secure_url);
     res.json({ url: result.secure_url });
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error('API Error uploading image:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-const PORT = process?.env?.API_BACKEND_PORT || 5000;
+const PORT = process.env.PORT || process.env.API_BACKEND_PORT || 5000;
 const API_BACKEND_HOST = process?.env?.API_BACKEND_HOST || "0.0.0.0";
 
 let GOOGLE_CLOUD_LOCATION = process?.env?.GOOGLE_CLOUD_LOCATION || 'us-central1';
