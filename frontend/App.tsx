@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './firebase.ts'; // Initialize Firebase
 import { Header } from './components/Header.tsx';
 import { Home } from './components/Home.tsx';
 import { Catalog } from './components/Catalog.tsx';
