@@ -46,6 +46,7 @@ app.use(cors({
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Firebase initialization
+let db;
 try {
   let firebaseOptions = {};
   
@@ -67,12 +68,13 @@ try {
     firebaseOptions.projectId = process.env.GOOGLE_CLOUD_PROJECT;
   }
 
-  initializeApp(firebaseOptions);
+  const firebaseApp = initializeApp(firebaseOptions);
+  db = getFirestore(firebaseApp);
   console.log('Firebase: Initialized successfully.');
 } catch (error) {
   console.error('Firebase: Initialization error:', error.message);
+  console.error('CRITICAL: App will likely fail if database is not accessible.');
 }
-const db = getFirestore();
 
 // Cloudinary configuration
 if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
@@ -85,6 +87,9 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 } else {
   console.warn('Cloudinary: Missing credentials! Check CLOUDINARY_CLOUD_NAME, API_KEY, and API_SECRET.');
 }
+
+// Health check endpoint for Railway
+app.get('/health', (req, res) => res.status(200).send('OK'));
 
 // --- Talent Management API Endpoints ---
 
@@ -486,8 +491,9 @@ app.post('/api-proxy', async (req, res) => {
   }
 });
 
-const server = app.listen(PORT, API_BACKEND_HOST, () => {
-  console.log(`Vertex AI Backend listening at http://localhost:${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Vertex AI Backend listening on port ${PORT}`);
+  console.log(`Public access should be available via your Railway URL.`);
 });
 
 
