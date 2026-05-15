@@ -22,25 +22,14 @@ app.use(express.urlencoded({ limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb" 
 
 // CORS configuration - allow requests from Vercel frontend
 app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      process.env.FRONTEND_URL || 'https://kult-ai-talent-library.vercel.app'
-    ];
-    
-    // Allow if no origin (like mobile apps or curl) or if it's in our allowed list or a vercel app
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      console.warn('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Reflect the request origin back to the client
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-app-proxy']
 }));
+
+// Handle preflight requests for all routes
+app.options('*', cors());
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
