@@ -148,7 +148,7 @@ app.put('/api/talents/:id', async (req, res) => {
   console.log('API: Received request to update talent:', id);
   try {
     const talent = req.body;
-    await db.collection('talents').doc(id).update(talent);
+    await db.collection('talents').doc(id).set(talent, { merge: true });
     console.log('API: Successfully updated talent:', id);
     res.json({ id, ...talent });
   } catch (error) {
