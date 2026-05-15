@@ -78,6 +78,42 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 // Health check endpoint for Railway
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
+// Diagnostic endpoint to test services
+app.get('/api/test-services', async (req, res) => {
+  const results = {
+    timestamp: new Date().toISOString(),
+    env: {
+      project: GOOGLE_CLOUD_PROJECT,
+      port: PORT,
+      cloudinary: !!process.env.CLOUDINARY_CLOUD_NAME
+    }
+  };
+  
+  try {
+    if (!db) throw new Error('Firestore DB not initialized');
+    const testDoc = await db.collection('test_connection').add({ 
+      test: true, 
+      time: new Date().toISOString() 
+    });
+    results.firestore = `OK (Write test successful: ${testDoc.id})`;
+    await db.collection('test_connection').doc(testDoc.id).delete();
+  } catch (e) {
+    results.firestore = `ERROR: ${e.message}`;
+  }
+  
+  try {
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      results.cloudinary = 'CONFIGURED';
+    } else {
+      results.cloudinary = 'MISSING CREDENTIALS';
+    }
+  } catch (e) {
+    results.cloudinary = `ERROR: ${e.message}`;
+  }
+  
+  res.json(results);
+});
+
 // --- Talent Management API Endpoints ---
 
 // GET /api/talents - Fetch all talents
