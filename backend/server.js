@@ -28,8 +28,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-app-proxy']
 }));
 
-// Handle preflight requests for all routes
-app.options('*', cors());
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
