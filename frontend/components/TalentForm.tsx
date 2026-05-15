@@ -296,24 +296,20 @@ export const TalentForm: React.FC<TalentFormProps> = ({ initialData, onSave, onC
                 <h3 className="text-lg font-bold mb-4 border-b border-zinc-800 pb-2">Galleries</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className={labelClass}>Turnaround Views</label>
+                    <label className={labelClass}>Turnaround View (16:9)</label>
                     <FileUploadBtn 
-                      label="Upload Multiple" accept="image/*" multiple
-                      onChange={(e) => handleMultipleFileUpload(e, urls => setFormData(prev => ({ ...prev, turnaroundUrls: urls })))} 
+                      label="Upload Turnaround" accept="image/*" 
+                      previewUrl={formData.turnaroundUrls?.[0]}
+                      onChange={(e) => handleFileUpload(e, url => setFormData(prev => ({ ...prev, turnaroundUrls: [url] })))} 
                     />
-                    {formData.turnaroundUrls && formData.turnaroundUrls.length > 0 && (
-                      <div className="text-xs text-cyan-400 mt-2">{formData.turnaroundUrls.length} images selected</div>
-                    )}
                   </div>
                   <div>
-                    <label className={labelClass}>Expressions</label>
+                    <label className={labelClass}>Expression Sheet (16:9)</label>
                     <FileUploadBtn 
-                      label="Upload Multiple" accept="image/*" multiple
-                      onChange={(e) => handleMultipleFileUpload(e, urls => setFormData(prev => ({ ...prev, expressionUrls: urls })))} 
+                      label="Upload Expressions" accept="image/*" 
+                      previewUrl={formData.expressionUrls?.[0]}
+                      onChange={(e) => handleFileUpload(e, url => setFormData(prev => ({ ...prev, expressionUrls: [url] })))} 
                     />
-                    {formData.expressionUrls && formData.expressionUrls.length > 0 && (
-                      <div className="text-xs text-cyan-400 mt-2">{formData.expressionUrls.length} images selected</div>
-                    )}
                   </div>
                   <div>
                     <label className={labelClass}>Close-up Image</label>
